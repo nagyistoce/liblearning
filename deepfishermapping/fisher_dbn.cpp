@@ -101,9 +101,7 @@ int main(int argc, char * argv[])
 
 	std::tr1::shared_ptr<experiment_datasets> exp_datasets = deserialize_from_file<experiment_datasets>(exp_data_file_path);
 
-	deepnn_fisher_knn_experiment exp(*exp_datasets,log_file_path);
-
-	exp.load_config(conf_file_path);
+	deepnn_fisher_knn_experiment exp(*exp_datasets,conf_file_path,log_file_path);
 
 	exp.evaluate(exp_num);
 

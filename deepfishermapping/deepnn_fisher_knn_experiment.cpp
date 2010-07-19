@@ -7,9 +7,12 @@
 #include <liblearning/deeplearning/objective/ridge_regression_regularizor.h>
 #include <liblearning/core/supervised_dataset.h>
 #include <liblearning/nearestneighborlearning/classifier/knn_classifier.h>
+#include <liblearning/deeplearning/ae_layerwise_initializer.h>
+#include <liblearning/deeplearning/rbm_layerwise_initializer.h>
 
-deepnn_fisher_knn_experiment::deepnn_fisher_knn_experiment(const experiment_datasets & datasets_,const string & filename):experiment (datasets_,filename)
+deepnn_fisher_knn_experiment::deepnn_fisher_knn_experiment(const experiment_datasets & datasets_,const string & config_file, const string & log_file):experiment (datasets_,log_file)
 {
+	load_config(config_file);
 }
 
 
@@ -30,28 +33,21 @@ tuple<shared_ptr<dataset>, shared_ptr<dataset>> deepnn_fisher_knn_experiment::pr
 
 deep_auto_encoder deepnn_fisher_knn_experiment::train_one_machine(const dataset & train, const vector<double> & train_params)
 {
-	vector<int> structure = get<0>(fixed_param);
-	vector<neuron_type> neuron_types = get<1>(fixed_param);
-
-	int init_iter  = get<2>(fixed_param);
-	int fine_tune_iter  = get<3>(fixed_param);
-
 	deep_auto_encoder net(structure,neuron_types);
 
-	mse_objective mse_obj;
+	net.init(*initializer,train);
 
-	net.init_stacked_auto_encoder(train,mse_obj,init_iter);
 
-	combined_objective obj;
+	shared_ptr<fisher_objective> fisher_obj(new fisher_objective());
+	shared_ptr<mse_objective> mse_obj(new mse_objective());
+	shared_ptr<ridge_regression_regularizor> ridge_obj(new ridge_regression_regularizor());
+	shared_ptr<combined_objective> comb_obj(new combined_objective());
 
-	fisher_objective fisher_obj;
-	ridge_regression_regularizor ridge_obj;
+	comb_obj->add_objective(fisher_obj,1);
+	comb_obj->add_objective(mse_obj,train_params[0]);
+	comb_obj->add_objective(ridge_obj,train_params[1]);
 
-	obj.add_objective(fisher_obj,1);
-	obj.add_objective(mse_obj,train_params[0]);
-	obj.add_objective(ridge_obj,train_params[1]);
-
-	net.finetune(train,obj,fine_tune_iter);
+	net.finetune(train,*comb_obj,finetune_iter_num);
 	
 	return net;
 }
@@ -77,7 +73,7 @@ using namespace std;
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
-using namespace boost;
+
 /**
  Config File Format:
 
@@ -85,6 +81,8 @@ using namespace boost;
 
 
 #include <liblearning/util/algo_util.h>
+
+
 
 void deepnn_fisher_knn_experiment::load_config(const string & config_file)
 {
@@ -114,15 +112,48 @@ void deepnn_fisher_knn_experiment::load_config(const string & config_file)
 			throw "Unknown neuron types:" + neuron_type_str_v[i];
 	}
 
-    int init_iter_num  = pt.get<int>("deepnn_fisher_knn_experiment.init_iter_num");
-    int finetune_iter_num = pt.get<int>("deepnn_fisher_knn_experiment.finetune_iter_num");
+	string init_method = pt.get<string>("deepnn_fisher_knn_experiment.initialization.init_method");
 
-	set_fixed_param(std::make_tuple(structure,neuron_types,init_iter_num,finetune_iter_num));
+	if (init_method == "rbm")
+	{
+		int rbm_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.iter_num");
 
-	string mse_coe_str = pt.get<string>("deepnn_fisher_knn_experiment.mse_weight");
+		initializer.reset(new rbm_layerwise_initializer(rbm_iter));
+	}
+	else if(init_method == "ae")
+	{
+		int rbm_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.rbm_iter_num");
+		int finetune_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.finetune_iter_num");
+
+		shared_ptr<mse_objective> obj(new mse_objective());
+		initializer.reset(new ae_layerwise_initializer(obj,rbm_iter,finetune_iter));
+	}
+	else if(init_method == "ae_wdcay")
+	{
+		double wdcay_weight = pt.get<double> ("deepnn_fisher_knn_experiment.initialization.wdcay_weight");
+		int rbm_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.rbm_iter_num");
+		int finetune_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.finetune_iter_num");
+
+		shared_ptr<mse_objective> mse_obj(new mse_objective());
+		shared_ptr<ridge_regression_regularizor> ridge_obj(new ridge_regression_regularizor());
+		shared_ptr<combined_objective> comb_obj(new combined_objective());
+
+		comb_obj->add_objective(mse_obj,1);
+		comb_obj->add_objective(ridge_obj,wdcay_weight);
+
+		initializer.reset(new ae_layerwise_initializer(comb_obj,rbm_iter,finetune_iter));
+	}
+	else
+	{
+		throw "unknow initialization method!";
+	}
+
+    finetune_iter_num = pt.get<int>("deepnn_fisher_knn_experiment.finetune.iter_num");
+
+	string mse_coe_str = pt.get<string>("deepnn_fisher_knn_experiment.param.mse_weight");
 	vector<double> mse_coes = construct_array<double>(mse_coe_str);
 
-	string wdecay_coe_str = pt.get<string>("deepnn_fisher_knn_experiment.wdecay_weight");
+	string wdecay_coe_str = pt.get<string>("deepnn_fisher_knn_experiment.param.wdecay_weight");
 	vector<double> wdecay_coes = construct_array<double>(wdecay_coe_str);
 
 	parameter_set train_param_set;
@@ -130,7 +161,7 @@ void deepnn_fisher_knn_experiment::load_config(const string & config_file)
 	train_param_set.add_param_candidate(wdecay_coes);
 
 
-	string knn_str = pt.get<string>("deepnn_fisher_knn_experiment.knn_param");
+	string knn_str = pt.get<string>("deepnn_fisher_knn_experiment.param.knn_param");
 	vector<double> knn_param = construct_array<double>(knn_str);
 
 	parameter_set test_param_set;

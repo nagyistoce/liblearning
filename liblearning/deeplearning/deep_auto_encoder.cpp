@@ -136,6 +136,32 @@ VectorXd deep_auto_encoder::get_b(int i) const
 	return *b[i];
 }
 
+void deep_auto_encoder::init(layerwise_initializer & initializer, const dataset & data)
+{
+	shared_ptr<dataset> cur_train_data (data.clone());
+	for(int i = 0; i < num_layers/2;i++)
+	{
+		neuron_type type = neuron_types[i];
+
+		initializer.init(structure[i], structure[i+1], type);
+
+		double cur_error = initializer.train(*cur_train_data);
+		cur_train_data = initializer.get_output();
+
+
+		*W[i] = initializer.get_W1();
+		*b[i] = initializer.get_b1();
+
+		*W[num_layers-i-1] = initializer.get_W2();
+
+		*b[num_layers-i-1] = initializer.get_b2();
+		//				memcpy(Wb.data()+Windex[num_layers-i], tW.data(), structure[i]*structure[i+1]*sizeof(double));
+		//				memcpy(Wb.data()+bindex[num_layers-i], curRBM.get_b().data(), structure[i+1]*sizeof(double));
+
+		init_layered_error[i] = cur_error;
+	}
+}
+
 void deep_auto_encoder::init_stacked_rbm(const dataset& data, int num_iter)
 {
 	/*			double min_train = data.minCoeff();

@@ -14,7 +14,7 @@
 
 class combined_objective: public data_related_network_objective
 {
-	std::vector<network_objective * > objs;
+	std::vector<shared_ptr<network_objective>> objs;
 
 	std::vector<double> weights;
 
@@ -28,7 +28,7 @@ public:
 	combined_objective();
 	virtual ~combined_objective();
 
-	void add_objective( network_objective & obj, double weight);
+	void add_objective( const shared_ptr<network_objective> & obj, double weight);
 
 	void set_weights(const std::vector<double> & weights);
 
