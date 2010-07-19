@@ -44,7 +44,7 @@ restricted_boltzmann_machine::~restricted_boltzmann_machine()
 
 }
 
-double restricted_boltzmann_machine::train_one_step(	const dataset & X0)
+double restricted_boltzmann_machine::train_one_step(const dataset & X0)
 {
 
 	// constrastive divergence goes from X0 -> Y0 -> X1 -> Y1 to obtain

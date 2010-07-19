@@ -18,7 +18,7 @@ using namespace std;
 
 
 
-template<typename M,typename FP>
+template<typename M>
 class experiment
 {
 
@@ -31,8 +31,6 @@ protected:
     parameter_set   train_candidate;
     
 	parameter_set   test_candidate;
-
-	FP fixed_param;
 
 	ofstream logfile;
 
@@ -59,14 +57,8 @@ public:
 
     virtual double test_performance(M & ,const dataset & train, const dataset & test, const vector<double> &  test_params) = 0 ;
 
-	virtual void load_config(const string & config_file) = 0;
-
 public:
 
-	void set_fixed_param(const FP & param)
-	{
-		fixed_param = param;
-	}
 
 	void set_param_candidate(const parameter_set & train_candidate_, const parameter_set & test_candidate_)
 	{
