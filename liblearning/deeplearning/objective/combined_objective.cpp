@@ -23,12 +23,12 @@ combined_objective::~combined_objective()
 }
 
 
-void combined_objective::add_objective(network_objective & obj,double weight)
+void combined_objective::add_objective(const shared_ptr<network_objective> & obj,double weight)
 {
-	if (type < obj.get_type())
-		type = obj.get_type();
+	if (type < obj->get_type())
+		type = obj->get_type();
 
-	objs.push_back(&obj);
+	objs.push_back(obj);
 	weights.push_back(weight);
 }
 
@@ -47,8 +47,8 @@ void combined_objective::set_dataset(const dataset & data_set_)
 	data_set = & data_set_;
 	for (int i = 0;i<objs.size();i++)
 	{
-		data_related_network_objective * p_obj =  dynamic_cast<data_related_network_objective *> (objs[i]);
-		if (p_obj != 0)
+		shared_ptr<data_related_network_objective > p_obj =  dynamic_pointer_cast<data_related_network_objective> (objs[i]);
+		if (p_obj)
 			p_obj->set_dataset(data_set_);
 	}
 }
@@ -61,8 +61,8 @@ double combined_objective::value(deep_auto_encoder & net)
 	// add the objective of self related objectives
 	for (int i = 0;i<objs.size();i++)
 	{
-		self_related_network_objective * p_obj =  dynamic_cast<self_related_network_objective *> (objs[i]);
-		if (p_obj != 0)
+		shared_ptr<self_related_network_objective> p_obj =  dynamic_pointer_cast<self_related_network_objective > (objs[i]);
+		if (p_obj)
 			value += weights[i]*objs[i]->value(net);
 	}
 
@@ -80,8 +80,8 @@ tuple<double, VectorXd> combined_objective::value_diff(deep_auto_encoder & net)
 	// add the objective of self related objectives
 	for (int i = 0;i<objs.size();i++)
 	{
-		self_related_network_objective * p_obj =  dynamic_cast<self_related_network_objective *> (objs[i]);
-		if (p_obj != 0)
+		shared_ptr<self_related_network_objective> p_obj =  dynamic_pointer_cast<self_related_network_objective > (objs[i]);
+		if (p_obj )
 		{
 			double cur_value = 0;
 			VectorXd cur_value_diff;
@@ -107,8 +107,8 @@ double combined_objective::prepared_value(deep_auto_encoder & net)
 
 	for (int i = 0;i<objs.size();i++)
 	{
-		data_related_network_objective * p_obj =  dynamic_cast<data_related_network_objective *> (objs[i]);
-		if (p_obj != 0)
+		shared_ptr<data_related_network_objective > p_obj =  dynamic_pointer_cast<data_related_network_objective> (objs[i]);
+		if (p_obj)
 			value += weights[i]*p_obj->prepared_value(net);
 	}
 
@@ -123,8 +123,8 @@ vector<shared_ptr<MatrixXd>> combined_objective::prepared_value_diff(deep_auto_e
 	
 	for (int i = 0;i<objs.size();i++)
 	{
-		data_related_network_objective * p_obj =  dynamic_cast<data_related_network_objective *> (objs[i]);
-		if (p_obj != 0)		
+		shared_ptr<data_related_network_objective > p_obj =  dynamic_pointer_cast<data_related_network_objective> (objs[i]);
+		if (p_obj )		
 		{
 			vector<shared_ptr<MatrixXd>> cur_diff = p_obj->prepared_value_diff(net);
 

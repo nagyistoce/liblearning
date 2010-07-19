@@ -11,6 +11,7 @@
 #include <liblearning/core/dataset.h>
 #include "neuron_type.h"
 #include "data_related_network_objective.h"
+#include "layerwise_initializer.h"
 
 #include <Eigen/Core>
 #include <vector>
@@ -100,6 +101,8 @@ public:
 	deep_auto_encoder(const deep_auto_encoder & net_);
 
 	virtual ~deep_auto_encoder();
+
+	void init(layerwise_initializer & initializer, const dataset & data);
 
 	void init_stacked_rbm(const dataset& data, int num_iter);
 
