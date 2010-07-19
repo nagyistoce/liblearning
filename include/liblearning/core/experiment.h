@@ -91,7 +91,7 @@ private:
 		logfile << " There are " << train_candidate.get_param_num() <<  " training parameter candidates :" << endl ;
 		for (int i = 0; i < train_candidate.get_param_num(); i ++ )
 		{
-			logfile << "/t the candidates for " << i <<  " -th training parameter are :" ;
+			logfile << "\t the candidates for " << i <<  " -th training parameter are :" ;
 			const vector<double> & cur_train_candidate = train_candidate.get_param_candidate(i);
 			for_each(cur_train_candidate.begin(),cur_train_candidate.end(),[this](double param){logfile << param << " " ;});
 			logfile << endl;
@@ -101,7 +101,7 @@ private:
 		logfile << " There are " << test_candidate.get_param_num() <<  " test parameter candidates :" << endl ;
 		for (int i = 0; i < test_candidate.get_param_num(); i ++ )
 		{
-			logfile << "/t the candidates for " << i <<  " -th testing parameter are :" ;
+			logfile << "\t the candidates for " << i <<  " -th testing parameter are :" ;
 			const vector<double> & cur_test_candidate = test_candidate.get_param_candidate(i);
 			for_each(cur_test_candidate.begin(),cur_test_candidate.end(),[this](double param){logfile << param << " " ;});
 			logfile << endl;
@@ -207,15 +207,15 @@ public:
 
 				double cur_test_perf = calculate_test_performance(*proc_train, *proc_test,  optim_train_params, optim_test_params);
             
-				logfile << "/t" << "The experimental result for " << j <<"-th train-test pair: " <<endl;
-				logfile << "/t" << "/t The optimal training params are : " ;
+				logfile << "\t" << "The experimental result for " << j <<"-th train-test pair: " <<endl;
+				logfile << "\t" << "/t The optimal training params are : " ;
 				for_each(optim_train_params.begin(),optim_train_params.end(),[this](double param){logfile << param << " " ;});
 				logfile << endl;
-				logfile << "/t" << "/t The optimal testing params are : " ;
+				logfile << "\t" << "/t The optimal testing params are : " ;
 				for_each(optim_test_params.begin(),optim_test_params.end(),[this](double param){logfile << param << " " ;});
 				logfile << endl;
-				logfile << "/t" << "/t The best average validation performance is : " << cur_valid_perf << endl; 
-				logfile << "/t" << "/t The test performance is : " << cur_test_perf << endl; 
+				logfile << "\t" << "/t The best average validation performance is : " << cur_valid_perf << endl; 
+				logfile << "\t" << "/t The test performance is : " << cur_test_perf << endl; 
 				logfile << endl;
 
 				logfile.flush();
@@ -229,7 +229,7 @@ public:
            
 			perf = perf/datasets.get_train_test_pair_num();
 
-			logfile << "/t" << "The testing performance for " << i << "-th experiment is : " << perf << endl;
+			logfile << "\t" << "The testing performance for " << i << "-th experiment is : " << perf << endl;
 
 			over_all_perf += perf;
 		}
