@@ -208,14 +208,14 @@ public:
 				double cur_test_perf = calculate_test_performance(*proc_train, *proc_test,  optim_train_params, optim_test_params);
             
 				logfile << "\t" << "The experimental result for " << j <<"-th train-test pair: " <<endl;
-				logfile << "\t" << "/t The optimal training params are : " ;
+				logfile << "\t" << "\t The optimal training params are : " ;
 				for_each(optim_train_params.begin(),optim_train_params.end(),[this](double param){logfile << param << " " ;});
 				logfile << endl;
-				logfile << "\t" << "/t The optimal testing params are : " ;
+				logfile << "\t" << "\t The optimal testing params are : " ;
 				for_each(optim_test_params.begin(),optim_test_params.end(),[this](double param){logfile << param << " " ;});
 				logfile << endl;
-				logfile << "\t" << "/t The best average validation performance is : " << cur_valid_perf << endl; 
-				logfile << "\t" << "/t The test performance is : " << cur_test_perf << endl; 
+				logfile << "\t" << "\t The best average validation performance is : " << cur_valid_perf << endl; 
+				logfile << "\t" << "\t The test performance is : " << cur_test_perf << endl; 
 				logfile << endl;
 
 				logfile.flush();
