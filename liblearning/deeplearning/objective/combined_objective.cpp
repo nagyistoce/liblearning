@@ -23,6 +23,14 @@ combined_objective::~combined_objective()
 }
 
 
+combined_objective::combined_objective(const combined_objective & obj):data_related_network_objective(obj),objs(obj.objs.size()),weights(obj.weights)
+{
+	for (int i = 0;i<obj.objs.size();i++)
+	{
+		objs[i].reset(obj.objs[i]->clone());
+	}
+}
+
 void combined_objective::add_objective(const shared_ptr<network_objective> & obj,double weight)
 {
 	if (type < obj->get_type())
@@ -81,7 +89,7 @@ tuple<double, VectorXd> combined_objective::value_diff(deep_auto_encoder & net)
 	for (int i = 0;i<objs.size();i++)
 	{
 		shared_ptr<self_related_network_objective> p_obj =  dynamic_pointer_cast<self_related_network_objective > (objs[i]);
-		if (p_obj )
+		if (p_obj )	
 		{
 			double cur_value = 0;
 			VectorXd cur_value_diff;
@@ -143,4 +151,13 @@ vector<shared_ptr<MatrixXd>> combined_objective::prepared_value_diff(deep_auto_e
 	}
 
 	return value_diff;
+}
+
+#include <iostream>
+
+
+combined_objective * combined_objective::clone()
+{
+	std::cout<< "combined object clone called" << std::endl;
+	return new combined_objective(*this);
 }

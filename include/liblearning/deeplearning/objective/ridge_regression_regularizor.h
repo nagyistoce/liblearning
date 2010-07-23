@@ -15,6 +15,8 @@ public:
 	virtual tuple<double, VectorXd> value_diff(deep_auto_encoder & net);
 
 	virtual double value(deep_auto_encoder & net);
+
+	virtual ridge_regression_regularizor * clone();
 };
 
 #endif

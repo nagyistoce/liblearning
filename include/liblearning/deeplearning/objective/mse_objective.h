@@ -11,6 +11,7 @@
 
 #include "../data_related_network_objective.h"
 
+
 class mse_objective:public data_related_network_objective
 {
 
@@ -23,6 +24,7 @@ public:
 	virtual double prepared_value(deep_auto_encoder & net) ;
 	virtual vector<shared_ptr<MatrixXd>> prepared_value_diff(deep_auto_encoder & net) ;
 
+	virtual mse_objective * clone();
 };
 
 #endif /* MSE_DECODER_OBJECTIVE_H_ */

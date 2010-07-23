@@ -33,3 +33,4 @@ tuple<double, VectorXd> network_optimize_objective::value_diff(const VectorXd & 
 	return obj.value_diff(net);
 
 }
+

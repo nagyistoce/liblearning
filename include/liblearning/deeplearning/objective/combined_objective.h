@@ -26,6 +26,7 @@ protected:
 
 public:
 	combined_objective();
+	combined_objective(const combined_objective & obj);
 	virtual ~combined_objective();
 
 	void add_objective( const shared_ptr<network_objective> & obj, double weight);
@@ -40,6 +41,8 @@ public:
 	virtual tuple<double, VectorXd> value_diff(deep_auto_encoder & net) ;
 
 	virtual double value(deep_auto_encoder & net)  ;
+
+	virtual combined_objective * clone();
 
 };
 
