@@ -18,6 +18,10 @@ public:
 	virtual tuple<double, VectorXd> value_diff(deep_auto_encoder & net)  = 0;
 
 	virtual double value(deep_auto_encoder & net)  = 0;
+
+		
+	virtual self_related_network_objective * clone() = 0;
+
 };
 
 #endif /* OBJECTIVE_H_ */

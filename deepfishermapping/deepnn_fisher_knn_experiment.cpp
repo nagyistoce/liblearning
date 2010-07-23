@@ -33,21 +33,27 @@ tuple<shared_ptr<dataset>, shared_ptr<dataset>> deepnn_fisher_knn_experiment::pr
 
 deep_auto_encoder deepnn_fisher_knn_experiment::train_one_machine(const dataset & train, const vector<double> & train_params)
 {
-	deep_auto_encoder net(structure,neuron_types);
 
-	net.init(*initializer,train);
+	
+	deep_auto_encoder  net(structure, neuron_types);
+	shared_ptr<layerwise_initializer> cur_initializer;
+
+	cur_initializer.reset(initializer->clone());
+
+	net.init(*cur_initializer,train);
 
 
 	shared_ptr<fisher_objective> fisher_obj(new fisher_objective());
 	shared_ptr<mse_objective> mse_obj(new mse_objective());
 	shared_ptr<ridge_regression_regularizor> ridge_obj(new ridge_regression_regularizor());
-	shared_ptr<combined_objective> comb_obj(new combined_objective());
+	combined_objective comb_obj;
 
-	comb_obj->add_objective(fisher_obj,1);
-	comb_obj->add_objective(mse_obj,train_params[0]);
-	comb_obj->add_objective(ridge_obj,train_params[1]);
+	comb_obj.add_objective(fisher_obj,1);
+	comb_obj.add_objective(mse_obj,train_params[0]);
+	comb_obj.add_objective(ridge_obj,train_params[1]);
 
-	net.finetune(train,*comb_obj,finetune_iter_num);
+	net.finetune(train,comb_obj,finetune_iter_num);
+	
 	
 	return net;
 }
@@ -79,6 +85,7 @@ using namespace std;
 
 */
 
+#include <iostream>
 
 #include <liblearning/util/algo_util.h>
 
@@ -94,13 +101,13 @@ void deepnn_fisher_knn_experiment::load_config(const string & config_file)
 	string neuron_type_str = pt.get<string>("deepnn_fisher_knn_experiment.neuron_type");
 
 	
-	vector<int > structure = construct_array<int>(structure_str);
+	structure = construct_array<int>(structure_str);
 	vector<string> neuron_type_str_v  = construct_array<string>(neuron_type_str) ;
 
 	if (neuron_type_str_v.size() != structure.size() -1)
 		throw "Bad config file: the element num of neuron types is not equal to that of structure -1 !";
 
-	vector<neuron_type> neuron_types(neuron_type_str_v.size());
+	neuron_types.resize(neuron_type_str_v.size());
 
 	for (int i = 0; i < neuron_type_str_v.size(); i++)
 	{
@@ -114,11 +121,14 @@ void deepnn_fisher_knn_experiment::load_config(const string & config_file)
 
 	string init_method = pt.get<string>("deepnn_fisher_knn_experiment.initialization.init_method");
 
+	boost::trim(init_method);
+
 	if (init_method == "rbm")
 	{
-		int rbm_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.iter_num");
+		int rbm_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.rbm_iter_num");
 
 		initializer.reset(new rbm_layerwise_initializer(rbm_iter));
+
 	}
 	else if(init_method == "ae")
 	{
@@ -126,11 +136,13 @@ void deepnn_fisher_knn_experiment::load_config(const string & config_file)
 		int finetune_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.finetune_iter_num");
 
 		shared_ptr<mse_objective> obj(new mse_objective());
+
 		initializer.reset(new ae_layerwise_initializer(obj,rbm_iter,finetune_iter));
+
 	}
 	else if(init_method == "ae_wdcay")
 	{
-		double wdcay_weight = pt.get<double> ("deepnn_fisher_knn_experiment.initialization.wdcay_weight");
+		double wdcay_weight = pt.get<double> ("deepnn_fisher_knn_experiment.initialization.wdecay_weight");
 		int rbm_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.rbm_iter_num");
 		int finetune_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.finetune_iter_num");
 
@@ -142,6 +154,8 @@ void deepnn_fisher_knn_experiment::load_config(const string & config_file)
 		comb_obj->add_objective(ridge_obj,wdcay_weight);
 
 		initializer.reset(new ae_layerwise_initializer(comb_obj,rbm_iter,finetune_iter));
+
+
 	}
 	else
 	{

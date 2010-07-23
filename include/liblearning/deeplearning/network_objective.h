@@ -17,6 +17,7 @@ using namespace std;
 
 #include <liblearning/deeplearning/network_objective_type.h>
 
+
 class network_objective
 {
 protected:
@@ -31,6 +32,8 @@ public:
 	virtual tuple<double, VectorXd> value_diff(deep_auto_encoder & net)  = 0 ;
 
 	virtual double value(deep_auto_encoder & net)  = 0 ;
+
+	virtual network_objective * clone() = 0;
 };
 
 #endif /* OBJECTIVE_H_ */

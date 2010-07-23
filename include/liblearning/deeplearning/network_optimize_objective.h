@@ -25,6 +25,8 @@ public:
 
 	virtual double value(const VectorXd & x);
 	virtual tuple<double, VectorXd> value_diff(const VectorXd & x);
+
+
 };
 
 #endif /* NETWORK_OPTIMIZE_OBJECTIVE_H_ */

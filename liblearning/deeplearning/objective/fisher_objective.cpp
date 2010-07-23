@@ -106,3 +106,9 @@ vector<shared_ptr<MatrixXd>> fisher_objective::prepared_value_diff(deep_auto_enc
 	result[1] = shared_ptr<MatrixXd>();
 	return result;
 }
+
+
+fisher_objective * fisher_objective::clone()
+{
+	return new fisher_objective(*this);
+}

@@ -24,3 +24,9 @@ tuple<double, VectorXd> ridge_regression_regularizor::value_diff(deep_auto_encod
 
 	return  make_tuple(value,value_diff);
 }
+
+
+ridge_regression_regularizor * ridge_regression_regularizor::clone()
+{
+	return new ridge_regression_regularizor(*this);
+}

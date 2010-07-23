@@ -4,9 +4,11 @@
 #include <liblearning/core/experiment.h>
 #include <liblearning/deeplearning/deep_auto_encoder.h>
 #include <liblearning/deeplearning/layerwise_initializer.h>
+#include <liblearning/core/prototype_factory.h>
 
 class deepnn_fisher_knn_experiment: public experiment<deep_auto_encoder> 
 {
+	boost::mutex member_variable_mutex;
 	shared_ptr<layerwise_initializer> initializer;
 
 	vector<int> structure;

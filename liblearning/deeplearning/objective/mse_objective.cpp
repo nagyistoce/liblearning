@@ -52,3 +52,9 @@ vector<shared_ptr<MatrixXd>> mse_objective::prepared_value_diff(deep_auto_encode
 
 	return result;
 }
+
+
+mse_objective * mse_objective::clone()
+{
+	return new mse_objective(*this);
+}

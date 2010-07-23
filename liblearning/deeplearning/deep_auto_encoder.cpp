@@ -438,7 +438,9 @@ void deep_auto_encoder::set_Wb(const VectorXd& Wb_)
 
 double deep_auto_encoder::finetune(const dataset & X,   data_related_network_objective& obj, int max_iter)
 {
+
 	obj.set_dataset(X);
+
 
 	conjugate_gradient_optimizer optimizer(max_iter, 1e-10);
 

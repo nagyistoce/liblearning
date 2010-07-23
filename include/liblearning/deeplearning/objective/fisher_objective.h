@@ -23,6 +23,8 @@ public:
 	virtual double prepared_value(deep_auto_encoder & net) ;
 	virtual vector<shared_ptr<MatrixXd>> prepared_value_diff(deep_auto_encoder & net) ;
 
+	virtual fisher_objective * clone();
+
 };
 
 #endif /* MSE_DECODER_OBJECTIVE_H_ */
