@@ -158,6 +158,5 @@ vector<shared_ptr<MatrixXd>> combined_objective::prepared_value_diff(deep_auto_e
 
 combined_objective * combined_objective::clone()
 {
-	std::cout<< "combined object clone called" << std::endl;
 	return new combined_objective(*this);
 }

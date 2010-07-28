@@ -12,6 +12,9 @@ class fisher_objective:public data_related_network_objective
 	double trSw;
 	double trSb;
 
+	MatrixXd Aw_diff_helper;
+	MatrixXd Ab_diff_helper;
+
 
 
 public:
