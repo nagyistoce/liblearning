@@ -63,6 +63,14 @@ void fisher_objective::set_dataset(const dataset & data_set_)
             }
         }
     }
+
+	Aw_diff_helper = Aw + Aw.transpose();
+	VectorXd Aw_diag = Aw_diff_helper.colwise().sum();
+	Aw_diag.asDiagonal().subTo(Aw_diff_helper);
+
+	Ab_diff_helper = Ab + Ab.transpose();
+	VectorXd Ab_diag = Ab_diff_helper.colwise().sum();
+	Aw_diag.asDiagonal().subTo(Ab_diff_helper);
 }
 
 #include <liblearning/util/Eigen_util.h>
@@ -88,15 +96,15 @@ vector<shared_ptr<MatrixXd>> fisher_objective::prepared_value_diff(deep_auto_enc
 {
 	const MatrixXd & feature = net.get_layered_output(net.get_encoder_layer_id());
 
-	MatrixXd Aw_AwT = Aw + Aw.transpose();
-	VectorXd Aw_diag = Aw_AwT.colwise().sum();
-	Aw_diag.asDiagonal().subTo(Aw_AwT);
-	MatrixXd JSw = -feature*Aw_AwT;  
+	//MatrixXd Aw_AwT = Aw + Aw.transpose();
+	//VectorXd Aw_diag = Aw_AwT.colwise().sum();
+	//Aw_diag.asDiagonal().subTo(Aw_AwT);
+	MatrixXd JSw = -feature*Aw_diff_helper;  
 
-	MatrixXd Ab_AbT = Ab + Ab.transpose();
-	VectorXd Ab_diag = Ab_AbT.colwise().sum();
-	Aw_diag.asDiagonal().subTo(Aw_AwT);
-    MatrixXd JSb = -feature*Ab_AbT;  
+	//MatrixXd Ab_AbT = Ab + Ab.transpose();
+	//VectorXd Ab_diag = Ab_AbT.colwise().sum();
+	//Aw_diag.asDiagonal().subTo(Aw_AwT);
+    MatrixXd JSb = -feature*Ab_diff_helper;  
 
     shared_ptr<MatrixXd> JF (new MatrixXd((JSw-JSb*(trSw/trSb))/trSb)); 
 
