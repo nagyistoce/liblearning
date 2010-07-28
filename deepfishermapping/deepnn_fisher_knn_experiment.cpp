@@ -42,15 +42,22 @@ deep_auto_encoder deepnn_fisher_knn_experiment::train_one_machine(const dataset 
 
 	net.init(*cur_initializer,train);
 
-
-	shared_ptr<fisher_objective> fisher_obj(new fisher_objective());
-	shared_ptr<mse_objective> mse_obj(new mse_objective());
-	shared_ptr<ridge_regression_regularizor> ridge_obj(new ridge_regression_regularizor());
 	combined_objective comb_obj;
+	shared_ptr<fisher_objective> fisher_obj(new fisher_objective());
 
 	comb_obj.add_objective(fisher_obj,1);
-	comb_obj.add_objective(mse_obj,train_params[0]);
-	comb_obj.add_objective(ridge_obj,train_params[1]);
+
+	if (train_params[0] != 0.0)
+	{
+		shared_ptr<mse_objective> mse_obj(new mse_objective());
+		comb_obj.add_objective(mse_obj,train_params[0]);
+	}
+
+	if (train_params[1] != 0.0)
+	{
+		shared_ptr<ridge_regression_regularizor> ridge_obj(new ridge_regression_regularizor());
+		comb_obj.add_objective(ridge_obj,train_params[1]);
+	}
 
 	net.finetune(train,comb_obj,finetune_iter_num);
 	
@@ -132,30 +139,23 @@ void deepnn_fisher_knn_experiment::load_config(const string & config_file)
 	}
 	else if(init_method == "ae")
 	{
-		int rbm_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.rbm_iter_num");
-		int finetune_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.finetune_iter_num");
-
-		shared_ptr<mse_objective> obj(new mse_objective());
-
-		initializer.reset(new ae_layerwise_initializer(obj,rbm_iter,finetune_iter));
-
-	}
-	else if(init_method == "ae_wdcay")
-	{
-		double wdcay_weight = pt.get<double> ("deepnn_fisher_knn_experiment.initialization.wdecay_weight");
+		double weight_decay_coe = pt.get<double> ("deepnn_fisher_knn_experiment.initialization.weight_decay_coe");
 		int rbm_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.rbm_iter_num");
 		int finetune_iter = pt.get<int>("deepnn_fisher_knn_experiment.initialization.finetune_iter_num");
 
 		shared_ptr<mse_objective> mse_obj(new mse_objective());
-		shared_ptr<ridge_regression_regularizor> ridge_obj(new ridge_regression_regularizor());
+		
 		shared_ptr<combined_objective> comb_obj(new combined_objective());
 
 		comb_obj->add_objective(mse_obj,1);
-		comb_obj->add_objective(ridge_obj,wdcay_weight);
 
+		if (weight_decay_coe != 0.0)
+		{
+			shared_ptr<ridge_regression_regularizor> ridge_obj(new ridge_regression_regularizor());
+			comb_obj->add_objective(ridge_obj,weight_decay_coe);
+		}
+		
 		initializer.reset(new ae_layerwise_initializer(comb_obj,rbm_iter,finetune_iter));
-
-
 	}
 	else
 	{
