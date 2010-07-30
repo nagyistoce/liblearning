@@ -70,7 +70,7 @@ void fisher_objective::set_dataset(const dataset & data_set_)
 
 	Ab_diff_helper = Ab + Ab.transpose();
 	VectorXd Ab_diag = Ab_diff_helper.colwise().sum();
-	Aw_diag.asDiagonal().subTo(Ab_diff_helper);
+	Ab_diag.asDiagonal().subTo(Ab_diff_helper);
 }
 
 #include <liblearning/util/Eigen_util.h>
