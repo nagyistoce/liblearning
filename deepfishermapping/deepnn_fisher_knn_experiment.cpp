@@ -9,6 +9,7 @@
 #include <liblearning/nearestneighborlearning/classifier/knn_classifier.h>
 #include <liblearning/deeplearning/ae_layerwise_initializer.h>
 #include <liblearning/deeplearning/rbm_layerwise_initializer.h>
+#include <liblearning/deeplearning/random_layerwise_initializer.h>
 
 deepnn_fisher_knn_experiment::deepnn_fisher_knn_experiment(const experiment_datasets & datasets_,const string & config_file, const string & log_file):experiment (datasets_,log_file)
 {
@@ -31,16 +32,16 @@ tuple<shared_ptr<dataset>, shared_ptr<dataset>> deepnn_fisher_knn_experiment::pr
 	return make_tuple(proc_train,proc_test);
 }
 
-deep_auto_encoder deepnn_fisher_knn_experiment::train_one_machine(const dataset & train, const vector<double> & train_params)
+shared_ptr<deep_auto_encoder> deepnn_fisher_knn_experiment::train_one_machine(const dataset & train, const vector<double> & train_params)
 {
 
 	
-	deep_auto_encoder  net(structure, neuron_types);
+	shared_ptr<deep_auto_encoder>  net(new deep_auto_encoder(structure, neuron_types));
 	shared_ptr<layerwise_initializer> cur_initializer;
 
 	cur_initializer.reset(initializer->clone());
 
-	net.init(*cur_initializer,train);
+	net->init(*cur_initializer,train);
 
 	combined_objective comb_obj;
 	shared_ptr<fisher_objective> fisher_obj(new fisher_objective());
@@ -59,7 +60,7 @@ deep_auto_encoder deepnn_fisher_knn_experiment::train_one_machine(const dataset 
 		comb_obj.add_objective(ridge_obj,train_params[1]);
 	}
 
-	net.finetune(train,comb_obj,finetune_iter_num);
+	net->finetune(train,comb_obj,finetune_iter_num);
 	
 	
 	return net;
@@ -77,6 +78,24 @@ double deepnn_fisher_knn_experiment::test_performance(deep_auto_encoder & net ,c
 
 	return clf.test(*p_test_feature);
 
+}
+#include <rapidxml/rapidxml_print.hpp>
+bool deepnn_fisher_knn_experiment::save_machine(const deep_auto_encoder & machine, const string & file_name)
+{
+	string xml_filename = file_name + ".xml";
+
+	std::ofstream ofs(xml_filename);
+
+	using namespace rapidxml;
+	xml_document<> doc;    
+
+	doc.append_node(machine.encode_xml_node(doc));
+
+	ofs << doc;
+
+	ofs.close();
+
+	return true;
 }
 
 #include <vector>
@@ -157,7 +176,11 @@ void deepnn_fisher_knn_experiment::load_config(const string & config_file)
 		
 		initializer.reset(new ae_layerwise_initializer(comb_obj,rbm_iter,finetune_iter));
 	}
-	else
+	else if (init_method == "random")
+	{
+		initializer.reset(new random_layerwise_initializer());
+	}
+	else 
 	{
 		throw "unknow initialization method!";
 	}
