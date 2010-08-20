@@ -42,7 +42,7 @@ public:
 		//	throw "the log file with same name :" + experiment_name + " has already exist!";
 		//}
 
-		logfile.open(experiment_name.c_str());
+		logfile.open((experiment_name+".log").c_str());
 	}
 	~experiment(void)
 	{
@@ -53,9 +53,11 @@ public:
 
 	virtual tuple<shared_ptr<dataset>, shared_ptr<dataset>> prepare_dataset(const dataset & train, const dataset & test) = 0 ;
 
-	virtual M train_one_machine(const dataset & train, const vector<double> & train_params) = 0 ;
+	virtual shared_ptr<M> train_one_machine(const dataset & train, const vector<double> & train_params) = 0 ;
 
     virtual double test_performance(M & ,const dataset & train, const dataset & test, const vector<double> &  test_params) = 0 ;
+
+	virtual bool save_machine(const M & machine, const string & file_name) = 0;
 
 public:
 
@@ -116,21 +118,21 @@ private:
 
         for (int m = 0; m < train_param_comb.size(); m++)
         {
-			train_test_threads.create_thread([&, m ](){
-				for (int j = 0; j < cv_pairs.size(); j++)
-				{
-
+			
+			for (int j = 0; j < cv_pairs.size(); j++)
+			{
+					train_test_threads.create_thread([&, m,j ](){
 						shared_ptr<dataset>  train = cv_pairs[j].get_train_dataset();
 						shared_ptr<dataset>  valid = cv_pairs[j].get_validation_dataset();
 
 						shared_ptr<dataset>  proc_train, proc_valid;
 						tie(proc_train,proc_valid) = prepare_dataset(*train,*valid);
 
-						M machine = train_one_machine(*proc_train,train_param_comb[m]);
+						shared_ptr<M> machine = train_one_machine(*proc_train,train_param_comb[m]);
 				
 						for (int k = 0; k < test_param_comb.size(); k++)
 						{
-							double cur_perf  = test_performance(machine, *proc_train, *proc_valid, test_param_comb[k]);
+							double cur_perf  = test_performance(*machine, *proc_train, *proc_valid, test_param_comb[k]);
 
 							{
 								boost::mutex::scoped_lock
@@ -139,9 +141,8 @@ private:
 							}
 						}
 
-						std::cout<< "Finish evaluating one training parameters:" << m << " at " << j << " -th cv-pairs" << endl;
-				}
-			});
+				});
+			}
 
 		}
 
@@ -160,10 +161,11 @@ private:
 
 	}
 
-	double calculate_test_performance(const dataset & train, const dataset & test, const vector<double> & optim_train_param, const vector<double> & optim_test_param)
+	tuple<double, shared_ptr<M>> calculate_test_performance(const dataset & train, const dataset & test, const vector<double> & optim_train_param, const vector<double> & optim_test_param)
 	{
-		M machine = train_one_machine(train,optim_train_param);
-        return  test_performance( machine,train,test, optim_test_param);
+		shared_ptr<M> machine = train_one_machine(train,optim_train_param);
+        double performance =   test_performance( *machine,train,test, optim_test_param);
+		return make_tuple(performance, machine);
 	}
 
 public:
@@ -197,7 +199,9 @@ public:
 				shared_ptr<dataset> proc_train, proc_test;
 				tie(proc_train,proc_test) = prepare_dataset(*train,*test);
 
-				double cur_test_perf = calculate_test_performance(*proc_train, *proc_test,  optim_train_params, optim_test_params);
+				shared_ptr<M> machine;
+				double cur_test_perf;
+				tie(cur_test_perf,machine) = calculate_test_performance(*proc_train, *proc_test,  optim_train_params, optim_test_params);
             
 				logfile << "\t" << "The experimental result for " << j <<"-th train-test pair: " <<endl;
 				logfile << "\t" << "\t The optimal training params are : " ;
@@ -214,8 +218,9 @@ public:
 
                
 				perf = perf + cur_test_perf;
-
-				
+				std::ostringstream sufix_ss;
+				sufix_ss << i << "_" << j;
+				save_machine(* machine, experiment_name + sufix_ss.str() );
 			}
 
            

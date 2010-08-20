@@ -79,7 +79,7 @@ void fisher_objective::set_dataset(const dataset & data_set_)
 
 double fisher_objective::prepared_value(deep_auto_encoder & net) 
 {
-	const MatrixXd & feature = net.get_layered_output(net.get_encoder_layer_id());
+	const MatrixXd & feature = net.get_layered_output(net.get_coder_layer_id());
 
 	MatrixXd M = sqdist(feature,feature);
            
@@ -94,7 +94,7 @@ double fisher_objective::prepared_value(deep_auto_encoder & net)
 
 vector<shared_ptr<MatrixXd>> fisher_objective::prepared_value_diff(deep_auto_encoder & net) 
 {
-	const MatrixXd & feature = net.get_layered_output(net.get_encoder_layer_id());
+	const MatrixXd & feature = net.get_layered_output(net.get_coder_layer_id());
 
 	//MatrixXd Aw_AwT = Aw + Aw.transpose();
 	//VectorXd Aw_diag = Aw_AwT.colwise().sum();
