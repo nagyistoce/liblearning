@@ -28,11 +28,11 @@ public:
 	
 	virtual tuple<shared_ptr<dataset>, shared_ptr<dataset>> prepare_dataset(const dataset & train, const dataset & test) ;
 
-	virtual deep_auto_encoder train_one_machine(const dataset & train, const vector<double> & train_params) ;
+	virtual shared_ptr<deep_auto_encoder> train_one_machine(const dataset & train, const vector<double> & train_params) ;
 
     virtual double test_performance(deep_auto_encoder & ,const dataset & train, const dataset & test, const vector<double> &  test_params) ;
 
-
+	virtual bool save_machine(const deep_auto_encoder & machine, const string & file_name);
 };
 
 #endif

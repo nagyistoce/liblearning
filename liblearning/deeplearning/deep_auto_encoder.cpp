@@ -25,7 +25,7 @@ deep_auto_encoder::deep_auto_encoder(const std::vector<int>& structure_,  const 
 
 	num_layers = 2*(structure_.size()-1);
 
-	encoder_layer_id = structure_.size()-2;
+	coder_layer_id = structure_.size()-2;
 
 	structure.resize(1+num_layers);
 	neuron_types.resize(num_layers);
@@ -76,6 +76,10 @@ deep_auto_encoder::deep_auto_encoder(const std::vector<int>& structure_,  const 
 
 }
 
+deep_auto_encoder::deep_auto_encoder()
+{
+}
+
 deep_auto_encoder::deep_auto_encoder(const deep_auto_encoder & net_)
 {
 	structure = net_.structure;
@@ -89,7 +93,7 @@ deep_auto_encoder::deep_auto_encoder(const deep_auto_encoder & net_)
 	num_layers = net_.num_layers;
 
 	//  the position of the encoder layers at all num_layers layers.(Input layer is not counted).
-	encoder_layer_id = net_.encoder_layer_id;
+	coder_layer_id = net_.coder_layer_id;
 
 	//  the diffence of objective to the weight and bias Wb
 	dWb.resize(Wb.size());
@@ -238,7 +242,13 @@ void deep_auto_encoder::init_stacked_auto_encoder(const dataset& data, data_rela
 
 void deep_auto_encoder::init_random()
 {
-	Wb = randn(Wb.size());
+	for (int i = 0;i < num_layers;i++)
+	{
+		*W[i] = 1/sqrt(double(W[i]->cols()))* (2*rand(W[i]->size()).array()-1);
+		*b[i] = 1/sqrt(double(b[i]->cols()))* (2*rand(b[i]->size()).array()-1);
+
+	}
+
 }
 
 int deep_auto_encoder::get_layer_num()
@@ -251,9 +261,9 @@ int deep_auto_encoder::get_output_layer_id()
 	return num_layers - 1 ;
 }
 
-int deep_auto_encoder::get_encoder_layer_id()
+int deep_auto_encoder::get_coder_layer_id()
 {
-	return encoder_layer_id;
+	return coder_layer_id;
 }
 
 const MatrixXd & deep_auto_encoder::get_layered_input(int id)
@@ -278,7 +288,7 @@ MatrixXd deep_auto_encoder::encode(const  MatrixXd & sample)
 
 	layered_input[0] = sample;
 
-	for (int level = 0; level <= encoder_layer_id; level ++)
+	for (int level = 0; level <= coder_layer_id; level ++)
 	{
 		if (neuron_types[level] ==  linear)
 		{
@@ -298,7 +308,7 @@ MatrixXd deep_auto_encoder::encode(const  MatrixXd & sample)
 		}
 	}
 
-	return layered_input[encoder_layer_id+1];
+	return layered_input[coder_layer_id+1];
 }
 
 
@@ -312,11 +322,11 @@ shared_ptr<dataset> deep_auto_encoder::encode(const  dataset & X)
 MatrixXd deep_auto_encoder::decode(const  MatrixXd & feature)
 {
 
-	layered_input[encoder_layer_id+1] = feature;
+	layered_input[coder_layer_id+1] = feature;
 
 	MatrixXd output;
 
-	for (int level = encoder_layer_id+1; level < num_layers; level ++)
+	for (int level = coder_layer_id+1; level < num_layers; level ++)
 	{
 
 		if (neuron_types[level] ==  linear)
@@ -361,7 +371,7 @@ MatrixXd deep_auto_encoder::error_diff_to_delta(const MatrixXd & error_diff, int
 void deep_auto_encoder::backprop_output_to_encoder(MatrixXd &  delta)
 {
 
-	for (int level = num_layers-1;level> encoder_layer_id;level--)
+	for (int level = num_layers-1;level> coder_layer_id;level--)
 	{
 
 		backprop_diff(*dW[level], *db[level], layered_input[level], delta);
@@ -387,7 +397,7 @@ void deep_auto_encoder::backprop_output_to_encoder(MatrixXd &  delta)
 void deep_auto_encoder::backprop_encoder_to_input(MatrixXd &  delta)
 {
 
-	for (int level = encoder_layer_id;level>= 0;level--)
+	for (int level = coder_layer_id;level>= 0;level--)
 	{
 
 		backprop_diff(*dW[level], *db[level], layered_input[level], delta);
@@ -441,8 +451,18 @@ double deep_auto_encoder::finetune(const dataset & X,   data_related_network_obj
 
 	obj.set_dataset(X);
 
+	if (obj.get_type() == encoder_related)
+	{
+		for (int i = coder_layer_id+1; i < num_layers; i++)
+		{
+			W[i]->setZero();
+			b[i]->setZero();
 
-	conjugate_gradient_optimizer optimizer(max_iter, 1e-10);
+		}
+	}
+	const double EPS=1.0e-18;
+
+	conjugate_gradient_optimizer optimizer(max_iter, EPS);
 
 	double obj_val = 0;
 
@@ -482,4 +502,129 @@ double deep_auto_encoder::finetune_until_converge( const dataset & X, data_relat
 
 	return new_obj_val;
 
+}
+
+
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
+
+rapidxml::xml_node<> * deep_auto_encoder::encode_xml_node(rapidxml::xml_document<> & doc) const
+{
+	using namespace rapidxml;
+	using namespace boost;
+
+	char * dae_name = doc.allocate_string("deep_auto_encoder"); 
+	xml_node<> * dae_node = doc.allocate_node(node_element, dae_name);
+
+	char * structure_name = doc.allocate_string("structure"); 
+	std::ostringstream structure_ss;
+	for_each(structure.begin(),structure.end(),[&structure_ss](int n){structure_ss << n << ' ';});
+	char * structure_value = doc.allocate_string(structure_ss.str().c_str()); 
+	xml_node<> * structure_node = doc.allocate_node(node_element, structure_name, structure_value);
+
+	char * neurontypes_name = doc.allocate_string("neurontypes"); 
+	std::ostringstream neurontypes_ss;
+	for_each(neuron_types.begin(),neuron_types.end(),[&neurontypes_ss](neuron_type type){neurontypes_ss << ((type == linear) ? "linear":"logistic") << ' ';});
+	char * neurontypes_value = doc.allocate_string(neurontypes_ss.str().c_str()); 
+	xml_node<> * neurontypes_node = doc.allocate_node(node_element, neurontypes_name, neurontypes_value);
+
+	std::ostringstream Wb_ss;
+	Wb_ss << Wb;
+	char * Wb_name = doc.allocate_string("Wb"); 
+	char * Wb_value = doc.allocate_string(Wb_ss.str().c_str()); 
+	xml_node<> * Wb_node = doc.allocate_node(node_element, Wb_name, Wb_value);
+
+	dae_node->append_node(structure_node);
+	dae_node->append_node(neurontypes_node);
+	dae_node->append_node(Wb_node);
+
+	return dae_node;
+}
+
+#include <liblearning/util/algo_util.h>
+
+void deep_auto_encoder::decode_xml_node(rapidxml::xml_node<> & node)
+{
+
+	using namespace rapidxml;
+	using namespace boost;
+
+	xml_node<> * structure_node = node.first_node("structure");
+	structure = construct_array<int>(structure_node->value());
+
+	xml_node<> * neurontypes_node = node.first_node("neurontypes");
+	vector<string> neurontypes_str_vec = construct_array<string>(neurontypes_node->value());
+	neuron_types.clear();
+	for_each(neurontypes_str_vec.begin(),neurontypes_str_vec.end(),
+		[this](string type_str)
+		{
+			neuron_type type;
+			if (type_str == "linear")
+				type = linear;
+			else if (type_str == "logistic")
+				type = logistic;
+			else 
+				throw "Bad auto encoder file: unrecognized neuron type : " + type_str;
+
+			neuron_types.push_back(type);
+		}
+	);
+
+	num_layers = neuron_types.size();
+
+	if (num_layers != structure.size()-1)
+	{
+		throw "Bad auto encoder file: dim of structure != dim of neurontypes + 1";
+	}
+
+	xml_node<> * Wb_node = node.first_node("Wb");
+	vector<double> Wb_vec = construct_array<double>(Wb_node->value());
+	Wb.resize(Wb_vec.size());
+
+	for (int i = 0;i<Wb.size();i++)
+	{
+		Wb(i) = Wb_vec[i];
+	}
+
+	coder_layer_id = (structure.size()-1)/2-1;
+
+	layered_input.resize(num_layers+1);
+
+	init_layered_error.resize(num_layers/2);
+
+	Windex.resize(structure.size()-1);
+	bindex.resize(structure.size()-1);
+
+	W.resize(structure.size()-1);
+	b.resize(structure.size()-1);
+
+	dW.resize(structure.size()-1);
+	db.resize(structure.size()-1);
+
+	int  W_ind = 0;
+
+	for (int level = 0; level < num_layers; level ++)
+	{
+
+		Windex[level] = W_ind;
+		bindex[level] = W_ind + structure[level] * structure[level + 1];
+
+		W_ind = W_ind + structure[level] * structure[level + 1] + structure[level + 1];
+	}
+
+	if (Wb.size() != W_ind)
+	{
+		throw "Bad auto encoder file: dim of Wb is mistaken";
+	}
+	dWb.resize(W_ind);
+
+	for (int level = 0; level < num_layers; level ++)
+	{
+		W[level] = new Map<MatrixXd>(Wb.data()+ Windex[level],structure[level + 1],structure[level]);
+		b[level] = new Map<VectorXd>(Wb.data()+ bindex[level],structure[level + 1]);
+
+		dW[level] = new Map<MatrixXd>(dWb.data()+ Windex[level],structure[level + 1],structure[level]);
+		db[level] = new Map<VectorXd>(dWb.data()+ bindex[level],structure[level + 1]);
+
+	}
 }
