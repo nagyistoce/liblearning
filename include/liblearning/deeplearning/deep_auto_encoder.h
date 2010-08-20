@@ -59,7 +59,7 @@ private:
 	int num_layers;
 
 	//  the position of the encoder layers at all num_layers layers.(Input layer is not counted).
-	int encoder_layer_id;
+	int coder_layer_id;
 
 
 
@@ -86,7 +86,7 @@ public:
 	int get_layer_num();
 
 	int get_output_layer_id();
-	int get_encoder_layer_id();
+	int get_coder_layer_id();
 
 	const MatrixXd & get_layered_input(int id);
 
@@ -99,7 +99,7 @@ public:
 	deep_auto_encoder(const vector<int>& structure,  const vector<neuron_type>& neuron_type);
 
 	deep_auto_encoder(const deep_auto_encoder & net_);
-
+	deep_auto_encoder();
 	virtual ~deep_auto_encoder();
 
 	void init(layerwise_initializer & initializer, const dataset & data);
@@ -122,7 +122,9 @@ public:
 
 	double finetune_until_converge( const dataset & X, data_related_network_objective & obj, int step_iter_num);
 
+	virtual rapidxml::xml_node<> * encode_xml_node(rapidxml::xml_document<> & doc) const;
 
+	virtual void decode_xml_node(rapidxml::xml_node<> & node);
 };
 
 #endif /* DEEP_AUTO_ENCODER_H_ */

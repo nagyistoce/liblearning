@@ -67,9 +67,17 @@ MatrixXd rand(int r, int c)
 
 #ifndef USE_MKL
 
+	
+	std::tr1::mt19937 rng(static_cast<unsigned int>(std::time(0))); 
+
+	std::tr1::uniform_real<double> nd(0.0, 1.0);
+
+	std::tr1::variate_generator<std::tr1::mt19937&, 
+                           std::tr1::uniform_real<double> > var_nor(rng, nd);
+
 	for (int i = 0;i<r;i++)
 		for (int j = 0;j<c;j++)
-			x(i,j) = std::rand()/double(RAND_MAX);
+			x(i,j) = var_nor();
 
 #else
 	fill_rand(x.data(), r*c,0,1);
@@ -82,8 +90,15 @@ Eigen::VectorXd rand(int size)
 {
 	VectorXd  x(size);
 
+	std::tr1::mt19937 rng(static_cast<unsigned int>(std::time(0))); 
+
+	std::tr1::uniform_real<double> nd(0.0, 1.0);
+
+	std::tr1::variate_generator<std::tr1::mt19937&, 
+                           std::tr1::uniform_real<double> > var_nor(rng, nd);
+
 	for (int i = 0;i<size;i++)
-			x(i) = std::rand()/double(RAND_MAX);
+			x(i) = var_nor();
 
 	return x;
 }

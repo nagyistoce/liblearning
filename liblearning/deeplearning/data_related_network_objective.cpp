@@ -28,7 +28,7 @@ tuple<double, VectorXd> data_related_network_objective::value_diff(deep_auto_enc
 		double value =  prepared_value(net);
 		vector<shared_ptr<MatrixXd>> error_diff = prepared_value_diff(net);
 
-		MatrixXd encoder_delta = net.error_diff_to_delta(*error_diff[0],net.get_encoder_layer_id());
+		MatrixXd encoder_delta = net.error_diff_to_delta(*error_diff[0],net.get_coder_layer_id());
 		net.zero_dWb();
 		net.backprop_encoder_to_input(encoder_delta);
 
@@ -47,7 +47,7 @@ tuple<double, VectorXd> data_related_network_objective::value_diff(deep_auto_enc
 
 		if (error_diff[0])
 		{
-			MatrixXd encoder_delta = net.error_diff_to_delta(*error_diff[0],net.get_output_layer_id());
+			MatrixXd encoder_delta = net.error_diff_to_delta(*error_diff[0],net.get_coder_layer_id());
 			output_delta += encoder_delta;
 		}
 		net.backprop_encoder_to_input(output_delta);
