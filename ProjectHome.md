@@ -1,0 +1,1 @@
+Liblearinging provides several machine learning algorithms. For now, it mainly focuses on deep learning architecture.
